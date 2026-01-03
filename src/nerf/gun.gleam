@@ -35,6 +35,21 @@ fn make_tls_opts() -> ConnectionOpts
 @external(erlang, "nerf_ffi", "make_tcp_opts")
 fn make_tcp_opts() -> ConnectionOpts
 
+/// Open a connection for WebSocket (HTTP/1.1 only, required for WS upgrade)
+pub fn open_ws(host: String, port: Int, transport: Transport) -> Result(ConnectionPid, Dynamic) {
+  let opts = case transport {
+    Tcp -> make_ws_tcp_opts()
+    Tls -> make_ws_tls_opts()
+  }
+  open_erl(charlist.from_string(host), port, opts)
+}
+
+@external(erlang, "nerf_ffi", "make_ws_tls_opts")
+fn make_ws_tls_opts() -> ConnectionOpts
+
+@external(erlang, "nerf_ffi", "make_ws_tcp_opts")
+fn make_ws_tcp_opts() -> ConnectionOpts
+
 @external(erlang, "gun", "await_up")
 pub fn await_up(pid: ConnectionPid) -> Result(Dynamic, Dynamic)
 

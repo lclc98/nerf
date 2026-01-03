@@ -45,7 +45,7 @@ fn do_connect(
   transport: Transport,
 ) -> Result(Connection, ConnectError) {
   use pid <- result.try(
-    gun.open(hostname, port, transport)
+    gun.open_ws(hostname, port, transport)
     |> result.map_error(ConnectionFailed),
   )
   use _ <- result.try(

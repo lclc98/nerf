@@ -1,6 +1,6 @@
 -module(nerf_ffi).
 
--export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/3, make_tls_opts/0, make_tcp_opts/0, await_response/3]).
+-export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/3, make_tls_opts/0, make_tcp_opts/0, make_ws_tls_opts/0, make_ws_tcp_opts/0, await_response/3]).
 
 ws_receive({connection, Ref, Pid}, Timeout)
     when is_reference(Ref) andalso is_pid(Pid) ->
@@ -50,13 +50,30 @@ ws_send_erl(Pid, Ref, Frame) ->
 make_tls_opts() ->
     #{
         transport => tls,
+        protocols => [http2, http],
+        tls_opts => [
+            {verify, verify_none},
+            {alpn_advertised_protocols, [<<"h2">>, <<"http/1.1">>]}
+        ]
+    }.
+
+make_tcp_opts() ->
+    #{
+        transport => tcp,
+        protocols => [http2, http]
+    }.
+
+%% WebSocket-specific options (HTTP/1.1 only, required for WS upgrade)
+make_ws_tls_opts() ->
+    #{
+        transport => tls,
         protocols => [http],
         tls_opts => [
             {verify, verify_none}
         ]
     }.
 
-make_tcp_opts() ->
+make_ws_tcp_opts() ->
     #{
         transport => tcp,
         protocols => [http]
