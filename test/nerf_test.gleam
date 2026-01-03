@@ -1,7 +1,12 @@
+import gleam/bit_array
 import gleam/bytes_tree
+import gleam/http
+import gleam/http/request
+import gleam/result
 import gleam/string
 import gleam/string_tree
 import gleeunit
+import nerf/http as nerf_http
 import nerf/websocket.{Binary, Text}
 
 pub fn main() {
@@ -51,4 +56,58 @@ pub fn echo_wss_test() {
 
   // Close the connection
   websocket.close(conn1)
+}
+
+// HTTP Tests
+
+pub fn http_get_test() {
+  let assert Ok(req) = request.to("https://httpbin.org/get")
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 200 = resp.status
+  let assert Ok(body) = bit_array.to_string(resp.body)
+  let assert True = string.contains(body, "\"url\"")
+}
+
+pub fn http_post_test() {
+  let assert Ok(req) =
+    request.to("https://httpbin.org/post")
+    |> result.map(request.set_method(_, http.Post))
+    |> result.map(request.set_body(_, "{\"test\": \"data\"}"))
+    |> result.map(request.set_header(_, "content-type", "application/json"))
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 200 = resp.status
+  let assert Ok(body) = bit_array.to_string(resp.body)
+  let assert True = string.contains(body, "\"test\"")
+}
+
+pub fn http_put_test() {
+  let assert Ok(req) =
+    request.to("https://httpbin.org/put")
+    |> result.map(request.set_method(_, http.Put))
+    |> result.map(request.set_body(_, "put data"))
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 200 = resp.status
+}
+
+pub fn http_delete_test() {
+  let assert Ok(req) =
+    request.to("https://httpbin.org/delete")
+    |> result.map(request.set_method(_, http.Delete))
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 200 = resp.status
+}
+
+pub fn http_patch_test() {
+  let assert Ok(req) =
+    request.to("https://httpbin.org/patch")
+    |> result.map(request.set_method(_, http.Patch))
+    |> result.map(request.set_body(_, "patch data"))
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 200 = resp.status
+}
+
+pub fn http_status_code_test() {
+  let assert Ok(req) = request.to("https://httpbin.org/status/404")
+  let assert Ok(resp) = nerf_http.send_string(req)
+  let assert 404 = resp.status
 }

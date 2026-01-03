@@ -62,3 +62,67 @@ pub fn ws_send(pid: ConnectionPid, ref: StreamReference, frame: Frame) -> Nil {
   ws_send_erl(pid, ref, frame)
   Nil
 }
+
+// HTTP request functions
+
+@external(erlang, "gun", "get")
+pub fn get(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+) -> StreamReference
+
+@external(erlang, "gun", "post")
+pub fn post(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+  body: BitArray,
+) -> StreamReference
+
+@external(erlang, "gun", "put")
+pub fn put(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+  body: BitArray,
+) -> StreamReference
+
+@external(erlang, "gun", "delete")
+pub fn delete(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+) -> StreamReference
+
+@external(erlang, "gun", "patch")
+pub fn patch(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+  body: BitArray,
+) -> StreamReference
+
+@external(erlang, "gun", "head")
+pub fn head(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+) -> StreamReference
+
+@external(erlang, "gun", "options")
+pub fn options(
+  pid: ConnectionPid,
+  path: String,
+  headers: List(Header),
+) -> StreamReference
+
+@external(erlang, "nerf_ffi", "await_response")
+pub fn await_response(
+  pid: ConnectionPid,
+  ref: StreamReference,
+  timeout: Int,
+) -> Result(#(Int, List(Header), BitArray), Dynamic)
+
+@external(erlang, "gun", "shutdown")
+pub fn shutdown(pid: ConnectionPid) -> Nil

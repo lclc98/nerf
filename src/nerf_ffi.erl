@@ -1,6 +1,6 @@
 -module(nerf_ffi).
 
--export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/3, make_tls_opts/0, make_tcp_opts/0]).
+-export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/3, make_tls_opts/0, make_tcp_opts/0, await_response/3]).
 
 ws_receive({connection, Ref, Pid}, Timeout)
     when is_reference(Ref) andalso is_pid(Pid) ->
@@ -61,3 +61,18 @@ make_tcp_opts() ->
         transport => tcp,
         protocols => [http]
     }.
+
+await_response(Pid, Ref, Timeout) ->
+    case gun:await(Pid, Ref, Timeout) of
+        {response, fin, Status, Headers} ->
+            {ok, {Status, Headers, <<>>}};
+        {response, nofin, Status, Headers} ->
+            case gun:await_body(Pid, Ref, Timeout) of
+                {ok, Body} ->
+                    {ok, {Status, Headers, Body}};
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+        {error, Reason} ->
+            {error, Reason}
+    end.
