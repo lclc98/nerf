@@ -1,6 +1,6 @@
 -module(nerf_ffi).
 
--export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/2]).
+-export([ws_receive/2, ws_await_upgrade/2, ws_send_erl/3, make_tls_opts/0, make_tcp_opts/0]).
 
 ws_receive({connection, Ref, Pid}, Timeout)
     when is_reference(Ref) andalso is_pid(Pid) ->
@@ -17,27 +17,47 @@ ws_receive({connection, Ref, Pid}, Timeout)
 ws_await_upgrade({connection, Ref, Pid}, Timeout) 
     when is_reference(Ref) andalso is_pid(Pid) ->
     receive
+        %% Success case
         {gun_upgrade, Pid, Ref, [<<"websocket">>], _} ->
             {ok, nil};
-
+        
+        %% Server rejected upgrade (e.g., 404, 403, etc.)
         {gun_response, Pid, _, _, Status, Headers} ->
-            % TODO: return an error
-            exit({ws_upgrade_failed, Status, Headers});
-
+            {error, {ws_upgrade_failed, Status, Headers}};
+        
+        %% Gun couldn't perform upgrade (e.g., HTTP/1.0 connection, network error)
         {gun_error, Pid, Ref, Reason} ->
-            % TODO: return an error
-            exit({ws_upgrade_failed, Reason})
-
-        % TODO: Are other cases required?
+            {error, {ws_upgrade_failed, Reason}};
+        
+        %% Connection went down during upgrade
+        {gun_down, Pid, _Protocol, Reason, _KilledStreams} ->
+            {error, {connection_down, Reason}};
+        
+        %% Gun process died
+        {'DOWN', _MRef, process, Pid, Reason} ->
+            {error, {process_down, Reason}}
     after Timeout ->
-        % TODO: return an error
-        exit(timeout)
+        {error, timeout}
     end.
 
-ws_send_erl(Pid, {text_builder, Text}) ->
-    ws_send_erl(Pid, {text, Text});
-ws_send_erl(Pid, {binary_builder, Bin}) ->
-    ws_send_erl(Pid, {binary, Bin});
-ws_send_erl(Pid, Frame) ->
-    gun:ws_send(Pid, Frame).
+ws_send_erl(Pid, Ref, {text_builder, Text}) ->
+    ws_send_erl(Pid, Ref, {text, Text});
+ws_send_erl(Pid, Ref, {binary_builder, Bin}) ->
+    ws_send_erl(Pid, Ref, {binary, Bin});
+ws_send_erl(Pid, Ref, Frame) ->
+    gun:ws_send(Pid, Ref, Frame).
 
+make_tls_opts() ->
+    #{
+        transport => tls,
+        protocols => [http],
+        tls_opts => [
+            {verify, verify_none}
+        ]
+    }.
+
+make_tcp_opts() ->
+    #{
+        transport => tcp,
+        protocols => [http]
+    }.
