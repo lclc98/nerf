@@ -29,11 +29,32 @@ pub fn open(host: String, port: Int, transport: Transport) -> Result(ConnectionP
 @external(erlang, "gun", "open")
 pub fn open_erl(host: Charlist, port: Int, opts: ConnectionOpts) -> Result(ConnectionPid, Dynamic)
 
+/// Open a connection with custom options
+pub fn open_with_opts(host: String, port: Int, opts: ConnectionOpts) -> Result(ConnectionPid, Dynamic) {
+  open_erl(charlist.from_string(host), port, opts)
+}
+
 @external(erlang, "nerf_ffi", "make_tls_opts")
 fn make_tls_opts() -> ConnectionOpts
 
 @external(erlang, "nerf_ffi", "make_tcp_opts")
 fn make_tcp_opts() -> ConnectionOpts
+
+/// Default TLS options (HTTP/2 with HTTP/1.1 fallback)
+@external(erlang, "nerf_ffi", "make_tls_opts")
+pub fn default_tls_opts() -> ConnectionOpts
+
+/// Default TCP options (HTTP/2 with HTTP/1.1 fallback)
+@external(erlang, "nerf_ffi", "make_tcp_opts")
+pub fn default_tcp_opts() -> ConnectionOpts
+
+/// TLS options for HTTP/1.1 only
+@external(erlang, "nerf_ffi", "make_ws_tls_opts")
+pub fn http1_tls_opts() -> ConnectionOpts
+
+/// TCP options for HTTP/1.1 only
+@external(erlang, "nerf_ffi", "make_ws_tcp_opts")
+pub fn http1_tcp_opts() -> ConnectionOpts
 
 /// Open a connection for WebSocket (HTTP/1.1 only, required for WS upgrade)
 pub fn open_ws(host: String, port: Int, transport: Transport) -> Result(ConnectionPid, Dynamic) {
