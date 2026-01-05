@@ -22,7 +22,9 @@ pub fn send(req: Request(BitArray)) -> Result(Response(BitArray), HttpError) {
 }
 
 /// Send an HTTP request with a string body.
-pub fn send_string(req: Request(String)) -> Result(Response(BitArray), HttpError) {
+pub fn send_string(
+  req: Request(String),
+) -> Result(Response(BitArray), HttpError) {
   req
   |> request.map(fn(body) { <<body:utf8>> })
   |> send
@@ -34,19 +36,20 @@ pub fn send_with_opts(
   req: Request(BitArray),
   opts: ConnectionOpts,
 ) -> Result(Response(BitArray), HttpError) {
-  let port = option.unwrap(req.port, case req.scheme {
-    http.Http -> 80
-    http.Https -> 443
-  })
+  let port =
+    option.unwrap(req.port, case req.scheme {
+      http.Http -> 80
+      http.Https -> 443
+    })
 
   use pid <- result.try(
     gun.open_with_opts(req.host, port, opts)
     |> result.map_error(ConnectionFailed),
   )
-  use _ <- result.try(
-    gun.await_up(pid)
-    |> result.map_error(ConnectionFailed),
-  )
+  // use _ <- result.try(
+  //   gun.await_up(pid)
+  //   |> result.map_error(ConnectionFailed),
+  // )
 
   let result = do_request(pid, req)
   gun.shutdown(pid)
@@ -91,7 +94,6 @@ fn do_request(
   case gun.await_response(pid, ref, 30_000) {
     Ok(#(status, headers, body)) ->
       Ok(Response(status: status, headers: headers, body: body))
-    Error(reason) ->
-      Error(RequestFailed(reason))
+    Error(reason) -> Error(RequestFailed(reason))
   }
 }
